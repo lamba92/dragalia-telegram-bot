@@ -38,9 +38,8 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation("org.telegram", "telegrambots", "4.4.0.1")
-    implementation(lamba("dragalia-library-kodein-di-jvm", "1.0.3"))
+    implementation(lamba("dragalia-library-kodein-di-jvm", "1.0.5"))
     implementation(lamba("telegrambots-ktx", "0.0.1"))
-    implementation("org.jetbrains.kotlinx", "kotlinx-html-jvm", "0.6.12")
     implementation("com.vdurmont", "emoji-java", "5.1.1")
 }
 

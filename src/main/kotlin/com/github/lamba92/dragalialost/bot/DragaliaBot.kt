@@ -1,13 +1,10 @@
 package com.github.lamba92.dragalialost.bot
 
-import com.github.lamba92.dragalialost.data.mappers.AdventurerImageMapper
 import com.github.lamba92.dragalialost.kodeindi.dragaliaLostModule
 import com.github.lamba92.telegrambots.extensions.TelegramPollingBotProvider
 import com.github.lamba92.telegrambots.extensions.telegramBot
+import io.ktor.client.features.logging.LogLevel
 import kotlinx.coroutines.flow.toList
-import org.kodein.di.erased.bind
-import org.kodein.di.erased.instance
-import org.kodein.di.erased.singleton
 
 object DragaliaBot : TelegramPollingBotProvider {
     override val bot = telegramBot {
@@ -15,8 +12,7 @@ object DragaliaBot : TelegramPollingBotProvider {
         botUsernameName = "DragaliaBot"
 
         kodein {
-            import(dragaliaLostModule(true))
-            bind<AdventurerImageMapper>() with singleton { AdventurerImageMapper(instance()) }
+            import(dragaliaLostModule(true, LogLevel.BODY))
         }
 
         handlers {
