@@ -1,0 +1,93 @@
+version: "3.7"
+
+networks:
+  mongo-net:
+
+services:
+
+  mongo-supervisor:
+    image: lamba92/maadb-project-mongo-supervisor
+    networks:
+      - mongo-net
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 15s
+    environment:
+      - CONFIGS=mongo-cfg-1:27019,mongo-cfg-2:27019
+      - SHARDS=mongo-shard-1:27018,mongo-shard-2:27018
+      - CONFIGS_RPL_NAME=cfgrs
+      - SHARDS_RPL_NAME=datars
+    ports:
+      - 27017:27020
+
+  mongo-cfg-1:
+    image: mongo
+    command: mongod --configsvr --replSet cfgrs
+    networks:
+      - mongo-net
+    deploy:
+      restart_policy:
+        delay: 5s
+        max_attempts: 5
+        window: 10s
+
+  mongo-cfg-2:
+    image: mongo
+    command: mongod --configsvr --replSet cfgrs
+    networks:
+      - mongo-net
+    deploy:
+      restart_policy:
+        delay: 5s
+        max_attempts: 5
+        window: 10s
+      placement:
+        constraints:
+          - node.labels.mongo.role==data2
+
+  mongo-shard-1:
+    image: mongo
+    command: mongod --shardsvr --replSet datars
+    networks:
+      - mongo-net
+    deploy:
+      restart_policy:
+        delay: 5s
+        max_attempts: 5
+        window: 10s
+      placement:
+        constraints:
+          - node.labels.mongo.role==data1
+
+  mongo-shard-2:
+    image: mongo
+    command: mongod --shardsvr  --replSet datars
+    networks:
+      - mongo-net
+    deploy:
+      restart_policy:
+        delay: 5s
+        max_attempts: 5
+        window: 10s
+      placement:
+        constraints:
+          - node.labels.mongo.role==data2
+
+  mongo-express:
+    image: mongo-express
+    networks:
+      - mongo-net
+    deploy:
+      restart_policy:
+        delay: 5s
+        max_attempts: 5
+        window: 10s
+    ports:
+      - 8081:8082
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=password
+      - ME_CONFIG_MONGODB_SERVER=mongo-supervisor

@@ -1,5 +1,6 @@
 package com.github.lamba92.dragalialost.bot
 
+import com.github.lamba92.dragalialost.data.datasource.GamepediaDatasourceCache
 import com.github.lamba92.dragalialost.domain.entities.AdventurerEntity
 import com.github.lamba92.dragalialost.domain.entities.DragaliaEntity
 import com.github.lamba92.dragalialost.domain.entities.DragonEntity
@@ -9,23 +10,20 @@ import com.github.lamba92.dragalialost.domain.entities.enums.CoAbilityLevel
 import com.github.lamba92.dragalialost.domain.entities.enums.Rarity
 import com.github.lamba92.dragalialost.domain.entities.enums.SkillLevel
 import com.github.lamba92.dragalialost.domain.entities.support.*
-import com.github.lamba92.dragalialost.domain.repositories.DragaliaLostRepository
 import com.github.lamba92.dragalialost.domain.usecases.SearchAllByNameUseCase
 import com.github.lamba92.telegrambots.extensions.*
 import com.github.lamba92.telegrambots.extensions.TelegramMarkdownBuilder.Style.BOLD
 import com.github.lamba92.telegrambots.extensions.TelegramMarkdownBuilder.Style.INLINE_CODE
 import com.vdurmont.emoji.EmojiParser
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import org.kodein.di.direct
 import org.kodein.di.erased.instance
 import org.telegram.telegrambots.meta.api.objects.inlinequery.inputmessagecontent.InputTextMessageContent
 import org.telegram.telegrambots.meta.api.objects.inlinequery.result.InlineQueryResultArticle
 
-fun <T> Flow<T>.mapArticle(function: InlineQueryResultArticle.(T) -> Unit) =
+fun <T> Iterable<T>.mapArticle(function: InlineQueryResultArticle.(T) -> Unit) =
     map { buildInlineArticle { function(it) } }
 
-fun Flow<DragaliaEntity>.mapArticle() = mapArticle { entity ->
+fun Iterable<DragaliaEntity>.mapArticle() = mapArticle { entity ->
     content<InputTextMessageContent> {
         messageText = buildMarkdownMessage(entity).also {
             println("MESSAGE BUILT FOR ${entity.name}:\n$it")
@@ -35,7 +33,6 @@ fun Flow<DragaliaEntity>.mapArticle() = mapArticle { entity ->
     thumbUrl = entity.icon
     id = entity.name
     title = "${entity.name} | ${entity::class.simpleName!!.removeSuffix("Entity")}"
-    thumbUrl = entity.icon
     description = entity.baseRarity.printStars() +
             "\n${entity.hp.toString().padStart(4)} HPs - ${entity.strength.toString().padStart(4)} STR - " +
             "${entity.baseMaxMight.toString().padStart(4)} Might"
@@ -67,7 +64,7 @@ fun buildMarkdownMessage(entity: DragaliaEntity) = buildMarkdownWithEmojiis {
     append(" STR | ")
     append(entity.baseMaxMight, BOLD)
     appendln(" Might")
-    appendImage(entity.artwork, "Artwork")
+    entity.artwork?.let { appendImage(it, "Artwork") }
     appendln()
     appendln()
     appendln("Details:", BOLD)
@@ -79,6 +76,12 @@ fun buildMarkdownMessage(entity: DragaliaEntity) = buildMarkdownWithEmojiis {
     }
     appendln(" - release date: ${entity.releaseDate.toString("dd/MM/yyyy")}")
     appendEntitySpecificData(entity)
+    appendln()
+    appendFooter()
+}
+
+fun TelegramMarkdownBuilder.appendFooter() {
+    appendln("Like our work? Donate [here](https://paypal.me/pools/c/8jBCiP2be2) :)")
 }
 
 fun TelegramMarkdownBuilder.appendEntitySpecificData(entity: DragaliaEntity) {
@@ -157,7 +160,7 @@ fun TelegramMarkdownBuilder.printSkillLevelData(data: SkillLevelData) {
 fun TelegramMarkdownBuilder.printAbilityLevelData(data: AbilityLevelData) {
     append("   • ")
     append("LVL${data.level.number}", INLINE_CODE)
-    appendln(": ${data.description.takeAsString()}")
+    appendln(": ${data.description}")
 }
 
 fun TelegramMarkdownBuilder.printCoAbilityLevelData(data: CoAbilityLevelData) {
@@ -228,9 +231,9 @@ val Rarity.number
     }
 
 
-val InlineQueryReceivedHandler.dragaliaRepository
-    get() = direct.instance<DragaliaLostRepository>()
+val MessageContext.gamepediaCache
+    get() = direct.instance<GamepediaDatasourceCache>()
 
-val InlineQueryReceivedHandler.searchAllUseCase
+val InlineQueryContext.searchAllUseCase
     get() = direct.instance<SearchAllByNameUseCase>()
 

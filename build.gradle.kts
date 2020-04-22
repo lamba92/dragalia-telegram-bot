@@ -1,45 +1,44 @@
-import org.hidetake.groovy.ssh.core.Remote
-import org.hidetake.groovy.ssh.core.RunHandler
-import org.hidetake.groovy.ssh.core.Service
-import org.hidetake.groovy.ssh.session.SessionHandler
+import com.github.lamba92.gradle.utils.TRAVIS_TAG
+import com.github.lamba92.gradle.utils.lamba
+import org.gradle.internal.os.OperatingSystem
+import java.io.ByteArrayOutputStream
+
+buildscript {
+    repositories {
+        maven("https://dl.bintray.com/lamba92/com.github.lamba92")
+        google()
+    }
+    dependencies {
+        classpath("com.github.lamba92", "lamba-gradle-utils", "1.0.6")
+    }
+}
 
 plugins {
-    kotlin("jvm") version "1.3.60-eap-76"
+    kotlin("jvm") version "1.4-M1"
     id("org.hidetake.ssh") version "2.10.1"
     application
 }
 
 group = "com.github.lamba92"
-version = "0.0.1"
+version = TRAVIS_TAG ?: "0.0.1"
 
 repositories {
     maven("https://dl.bintray.com/kotlin/kotlin-eap")
-    maven("https://maven.pkg.github.com/")
+    maven("https://dl.bintray.com/lamba92/com.github.lamba92")
+    maven("https://dl.bintray.com/kotlin/kotlinx.html")
     jcenter()
+    mavenCentral()
 }
 
-fun findProperty(propertyName: String): String? =
-    project.findProperty(propertyName) as String? ?: System.getenv(propertyName)
-
-repositories {
-    maven("https://dl.bintray.com/kotlin/kotlin-eap")
-    maven("https://dl.bintray.com/kotlin/kotlinx.html")
-    mavenCentral()
-    jcenter()
-    maven("https://maven.pkg.github.com/${findProperty("githubAccount")}/${rootProject.name}") {
-        name = "GitHubPackages"
-        credentials {
-            username = findProperty("githubAccount")
-            password = findProperty("githubToken")
-        }
-    }
+kotlin.target.compilations.all {
+    kotlinOptions.jvmTarget = "1.8"
 }
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation("org.telegram", "telegrambots", "4.4.0.1")
-    implementation(lamba("dragalia-library-kodein-di-jvm", "1.0.5"))
-    implementation(lamba("telegrambots-ktx", "0.0.1"))
+    implementation(lamba("dragalia-library-kodein-di", "1.1.0"))
+    implementation(lamba("telegrambots-ktx", "1.0.1"))
     implementation("com.vdurmont", "emoji-java", "5.1.1")
 }
 
@@ -47,46 +46,75 @@ application {
     mainClassName = "com.github.lamba92.dragalialost.bot.MainKt"
 }
 
-tasks {
-    compileKotlin {
-        kotlinOptions.jvmTarget = "1.8"
-    }
-    compileTestKotlin {
-        kotlinOptions.jvmTarget = "1.8"
-    }
-}
+// Check OS first, if using Win10Home this exec can take a lot of time
+// due to Docker Toolbox under VirtualBox cold start
+val shouldSetupDocker = if (OperatingSystem.current().isLinux)
+    exec {
+        commandLine("docker")
+        standardOutput = ByteArrayOutputStream()
+        errorOutput = ByteArrayOutputStream()
+    }.exitValue == 0
+else
+    false
 
-val raspiLocal = remotes.create("raspi-local") {
-    val raspiPassword: String by project
-    host = "192.168.1.101"
-    user = "pi"
-    password = raspiPassword
-}
+if (shouldSetupDocker)
+    tasks {
 
-tasks.create("raspiLocalDeploy") {
-    val installDist by tasks.named<Sync>("installDist")
-    dependsOn(installDist)
-    doLast {
-        ssh.runSessions {
-            session(raspiLocal) {
-                executeSudo("systemctl stop dragalia-telegram-bot")
-                put(installDist.destinationDir, "/home/pi/workspace")
-                execute("chmod u+x /home/pi/workspace/dragalia-telegram-bot/bin/dragalia-telegram-bot")
-                executeSudo("systemctl start dragalia-telegram-bot")
-            }
+        val distTar by getting(Tar::class)
+
+        val dockerBuildFolder = file("$buildDir/dockerBuild").absolutePath
+
+        val copyDistTar by creating(Copy::class) {
+            dependsOn(distTar)
+            group = "docker"
+            from(distTar.archiveFile.get())
+            into(dockerBuildFolder)
         }
+
+        val copyDockerfile by creating(Copy::class) {
+            group = "docker"
+            from("${project.buildDir}/Dockerfile")
+                .rename { "Dockerfile" }
+            into(dockerBuildFolder)
+        }
+
+        fun commands(withVersion: Boolean = false, addArm32: Boolean = true) = arrayOf(
+            "docker", "buildx", "build", "-t",
+            buildString {
+                append("lamba92/${project.name}")
+                if (withVersion)
+                    append(":${project.version}")
+            },
+            "--build-arg=TAR_NAME=${distTar.archiveFile.get().asFile.nameWithoutExtension}",
+            "--build-arg=APP_NAME=${project.name}",
+            buildString {
+                append("--platform=linux/amd64,linux/arm64")
+                if (addArm32)
+                    append(",linux/arm")
+            },
+            dockerBuildFolder
+        )
+
+        val buildMultiArchImages by creating(Exec::class) {
+            dependsOn(copyDistTar, copyDockerfile)
+            group = "docker"
+            commandLine(*commands())
+        }
+
+        "build" {
+            dependsOn(buildMultiArchImages)
+        }
+
+        val publishMultiArchImagesWithLatestTag by creating(Exec::class) {
+            dependsOn(copyDistTar, copyDockerfile)
+            group = "docker"
+            commandLine(*commands(), "--push")
+        }
+
+        create<Exec>("publishMultiArchImages") {
+            dependsOn(publishMultiArchImagesWithLatestTag)
+            group = "docker"
+            commandLine(*commands(true), "--push")
+        }
+
     }
-}
-
-@Suppress("unused")
-fun DependencyHandler.lamba(module: String, version: String? = null): Any =
-    "com.github.lamba92:$module${version?.let { ":$version" } ?: ""}"
-
-fun Service.runSessions(action: RunHandler.() -> Unit) =
-    run(delegateClosureOf(action))
-
-fun RunHandler.session(vararg remotes: Remote, action: SessionHandler.() -> Unit) =
-    session(*remotes, delegateClosureOf(action))
-
-fun SessionHandler.put(from: Any, into: Any) =
-    put(hashMapOf("from" to from, "into" to into))
