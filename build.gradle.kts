@@ -73,8 +73,7 @@ if (shouldSetupDocker)
 
         val copyDockerfile by creating(Copy::class) {
             group = "docker"
-            from("${project.buildDir}/Dockerfile")
-                .rename { "Dockerfile" }
+            from("$projectDir/Dockerfile")
             into(dockerBuildFolder)
         }
 

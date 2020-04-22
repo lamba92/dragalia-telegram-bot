@@ -5,6 +5,24 @@ networks:
 
 services:
 
+  dragalia-bot:
+    image: lamba92/dragalia-telegram-bot
+    networks:
+      - mongo-net
+    depends_on:
+      - mongo-cfg-1
+      - mongo-cfg-2
+      - mongo-shard-1
+      - mongo-shard-2
+      - mongo-supervisor
+    deploy:
+      restart_policy:
+        condition: any
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - DB_HOST=supervisor
+      - DB_PORT=27017
+
   mongo-supervisor:
     image: lamba92/maadb-project-mongo-supervisor
     networks:
