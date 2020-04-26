@@ -4,46 +4,44 @@ import com.github.lamba92.dragalialost.di.dragaliaLostModule
 import com.github.lamba92.dragalialost.di.dragaliaMongoDBCacheModule
 import com.github.lamba92.telegrambots.extensions.KApiContextInitializer
 import com.github.lamba92.telegrambots.extensions.text
+import com.github.lamba92.utils.mongodb.bootstrap.waitUntilMongoIsUp
 
-fun main(): Unit = KApiContextInitializer {
+suspend fun main() {
 
-    registerPollingBot {
+    waitUntilMongoIsUp(DB_HOST, DB_PORT)
 
-        botApiToken = System.getenv("BOT_TOKEN")
-        botUsername = "DragaliaBot"
+    KApiContextInitializer {
 
-        kodein {
+        registerPollingBot {
 
-            import(dragaliaLostModule())
-            import(
-                dragaliaMongoDBCacheModule(
-                    System.getenv("DB_HOST"),
-                    System.getenv("DB_PORT")?.toInt() ?: 27017,
-                    System.getenv("DB_NAME") ?: "db"
-                )
-            )
+            botApiToken = BOT_TOKEN
+            botUsername = "DragaliaBot"
 
-        }
-
-        handlers {
-
-            inlineQueries {
-                respond(searchAllUseCase.buildAction(query.text).mapArticle())
+            kodein {
+                import(dragaliaLostModule())
+                import(dragaliaMongoDBCacheModule(DB_HOST, DB_PORT, DB_NAME))
             }
 
-            messages {
-                if (message.from.id == 140058014 && message.text == "/clearcache") {
-                    respond {
-                        text = "Deleting..."
-                    }
-                    gamepediaCache.invalidateCache()
-                    respond {
-                        text = "Done"
+            handlers {
+
+                inlineQueries {
+                    respond(searchAllUseCase.buildAction(query.text).mapArticle())
+                }
+
+                messages {
+                    if (message.from.id == 140058014 && message.text == "/clearcache") {
+                        respond {
+                            text = "Deleting..."
+                        }
+                        gamepediaCache.invalidateCache()
+                        respond {
+                            text = "Done"
+                        }
                     }
                 }
             }
         }
-    }
 
+    }
 }
 

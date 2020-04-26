@@ -44,6 +44,7 @@ fun Rarity.printStars() = buildStringWithEmojiis {
         Rarity.THREE -> append(":star::star::star:")
         Rarity.FOUR -> append(":star::star::star::star:")
         Rarity.FIVE -> append(":star::star::star::star::star:")
+        Rarity.SIX -> append(":star::star::star::star::star::star:")
     }
 }
 
@@ -228,6 +229,7 @@ val Rarity.number
         Rarity.THREE -> 3
         Rarity.FOUR -> 4
         Rarity.FIVE -> 5
+        else -> 7
     }
 
 
@@ -236,4 +238,16 @@ val MessageContext.gamepediaCache
 
 val InlineQueryContext.searchAllUseCase
     get() = direct.instance<SearchAllByNameUseCase>()
+
+val DB_HOST
+    get() = System.getenv("DB_HOST") ?: "localhost"
+
+val DB_PORT
+    get() = System.getenv("DB_PORT")?.toInt() ?: 27017
+
+val DB_NAME
+    get() = System.getenv("DB_NAME") ?: "db"
+
+val BOT_TOKEN
+    get() = System.getenv("BOT_TOKEN") ?: "db"
 

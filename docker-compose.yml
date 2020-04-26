@@ -22,7 +22,7 @@ services:
         condition: any
     environment:
       - BOT_TOKEN=${BOT_TOKEN}
-      - DB_HOST=supervisor
+      - DB_HOST=mongo-supervisor
       - DB_PORT=27017
 
   mongo-supervisor:
