@@ -1,5 +1,8 @@
 package com.github.lamba92.dragalialost.bot
 
+import com.github.aakira.napier.Antilog
+import com.github.aakira.napier.DebugAntilog
+import com.github.aakira.napier.Napier
 import com.github.lamba92.dragalialost.di.dragaliaLostModule
 import com.github.lamba92.dragalialost.di.dragaliaMongoDBCacheModule
 import com.github.lamba92.telegrambots.extensions.KApiContextInitializer
@@ -8,8 +11,8 @@ import com.github.lamba92.utils.mongodb.bootstrap.waitUntilMongoIsUp
 
 suspend fun main() {
 
-    waitUntilMongoIsUp(DB_HOST, DB_PORT)
-
+//    waitUntilMongoIsUp(DB_HOST, DB_PORT)
+    Napier.base(DebugAntilog())
     KApiContextInitializer {
 
         registerPollingBot {
@@ -18,14 +21,15 @@ suspend fun main() {
             botUsername = "DragaliaBot"
 
             kodein {
-                import(dragaliaLostModule())
+                import(dragaliaLostModule(true))
                 import(dragaliaMongoDBCacheModule(DB_HOST, DB_PORT, DB_NAME))
             }
 
             handlers {
 
                 inlineQueries {
-                    respond(searchAllUseCase.buildAction(query.text).mapArticle())
+                    if (query.text.length >= 2)
+                        respond(searchAllUseCase.buildAction(query.text).mapArticle())
                 }
 
                 messages {

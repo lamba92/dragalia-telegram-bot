@@ -9,12 +9,6 @@ services:
     image: lamba92/dragalia-telegram-bot
     networks:
       - mongo-net
-    depends_on:
-      - mongo-cfg-1
-      - mongo-cfg-2
-      - mongo-shard-1
-      - mongo-shard-2
-      - mongo-supervisor
     deploy:
       replicas: 3
       max_replicas_per_node: 1
@@ -22,11 +16,11 @@ services:
         condition: any
     environment:
       - BOT_TOKEN=${BOT_TOKEN}
-      - DB_HOST=mongo-supervisor
+      - DB_HOST=mongo-db
       - DB_PORT=27017
 
-  mongo-supervisor:
-    image: lamba92/maadb-project-mongo-supervisor
+  mongo-db:
+    image: mongo
     networks:
       - mongo-net
     deploy:
@@ -35,79 +29,6 @@ services:
         delay: 5s
         max_attempts: 3
         window: 15s
-    environment:
-      - CONFIGS=mongo-cfg-1:27019,mongo-cfg-2:27019
-      - SHARDS=mongo-shard-1:27018,mongo-shard-2:27018
-      - CONFIGS_RPL_NAME=cfgrs
-      - SHARDS_RPL_NAME=datars
     ports:
       - 27017:27020
 
-  mongo-cfg-1:
-    image: mongo
-    command: mongod --configsvr --replSet cfgrs
-    networks:
-      - mongo-net
-    deploy:
-      restart_policy:
-        delay: 5s
-        max_attempts: 5
-        window: 10s
-
-  mongo-cfg-2:
-    image: mongo
-    command: mongod --configsvr --replSet cfgrs
-    networks:
-      - mongo-net
-    deploy:
-      restart_policy:
-        delay: 5s
-        max_attempts: 5
-        window: 10s
-      placement:
-        constraints:
-          - node.labels.mongo.role==data2
-
-  mongo-shard-1:
-    image: mongo
-    command: mongod --shardsvr --replSet datars
-    networks:
-      - mongo-net
-    deploy:
-      restart_policy:
-        delay: 5s
-        max_attempts: 5
-        window: 10s
-      placement:
-        constraints:
-          - node.labels.mongo.role==data1
-
-  mongo-shard-2:
-    image: mongo
-    command: mongod --shardsvr  --replSet datars
-    networks:
-      - mongo-net
-    deploy:
-      restart_policy:
-        delay: 5s
-        max_attempts: 5
-        window: 10s
-      placement:
-        constraints:
-          - node.labels.mongo.role==data2
-
-  mongo-express:
-    image: mongo-express
-    networks:
-      - mongo-net
-    deploy:
-      restart_policy:
-        delay: 5s
-        max_attempts: 5
-        window: 10s
-    ports:
-      - 8081:8082
-    environment:
-      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
-      - ME_CONFIG_MONGODB_ADMINPASSWORD=password
-      - ME_CONFIG_MONGODB_SERVER=mongo-supervisor

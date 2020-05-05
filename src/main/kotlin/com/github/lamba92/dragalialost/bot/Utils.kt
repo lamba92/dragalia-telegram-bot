@@ -25,9 +25,7 @@ fun <T> Iterable<T>.mapArticle(function: InlineQueryResultArticle.(T) -> Unit) =
 
 fun Iterable<DragaliaEntity>.mapArticle() = mapArticle { entity ->
     content<InputTextMessageContent> {
-        messageText = buildMarkdownMessage(entity).also {
-            println("MESSAGE BUILT FOR ${entity.name}:\n$it")
-        }
+        messageText = buildMarkdownMessage(entity)
         enableMarkdown(true)
     }
     thumbUrl = entity.icon
@@ -75,14 +73,8 @@ fun buildMarkdownMessage(entity: DragaliaEntity) = buildMarkdownWithEmojiis {
     entity.obtainedFrom.forEach {
         appendln("   • $it")
     }
-    appendln(" - release date: ${entity.releaseDate.toString("dd/MM/yyyy")}")
     appendEntitySpecificData(entity)
     appendln()
-    appendFooter()
-}
-
-fun TelegramMarkdownBuilder.appendFooter() {
-    appendln("Like our work? Donate [here](https://paypal.me/pools/c/8jBCiP2be2) :)")
 }
 
 fun TelegramMarkdownBuilder.appendEntitySpecificData(entity: DragaliaEntity) {
@@ -246,8 +238,9 @@ val DB_PORT
     get() = System.getenv("DB_PORT")?.toInt() ?: 27017
 
 val DB_NAME
-    get() = System.getenv("DB_NAME") ?: "db"
+    get() = System.getenv("DB_NAME") ?: "dragalia"
 
 val BOT_TOKEN
-    get() = System.getenv("BOT_TOKEN") ?: "db"
+    get() = System.getenv("BOT_TOKEN")
+        ?: throw IllegalArgumentException("Cannot find bot token in environment")
 

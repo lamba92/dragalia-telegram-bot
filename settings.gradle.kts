@@ -9,8 +9,8 @@ pluginManagement {
 
 rootProject.name = "dragalia-telegram-bot"
 
-if (file("../mongo-bootstrap").run { exists() && isDirectory })
-    includeBuild("../mongo-bootstrap") {
+if (file("../mongo-bootstrapper").run { exists() && isDirectory })
+    includeBuild("../mongo-bootstrapper") {
         dependencySubstitution {
             substitute(module("com.github.lamba92:mongo-bootstrapper")).with(project(":"))
         }

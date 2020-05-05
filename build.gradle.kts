@@ -28,6 +28,7 @@ repositories {
     maven("https://dl.bintray.com/kotlin/kotlinx.html")
     jcenter()
     mavenCentral()
+    maven("https://oss.sonatype.org/content/repositories/snapshots")
 }
 
 kotlin.target.compilations.all {
