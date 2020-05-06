@@ -10,6 +10,7 @@ import com.github.lamba92.dragalialost.domain.entities.enums.CoAbilityLevel
 import com.github.lamba92.dragalialost.domain.entities.enums.Rarity
 import com.github.lamba92.dragalialost.domain.entities.enums.SkillLevel
 import com.github.lamba92.dragalialost.domain.entities.support.*
+import com.github.lamba92.dragalialost.domain.repositories.DragaliaLostRepositoryCache
 import com.github.lamba92.dragalialost.domain.usecases.SearchAllByNameUseCase
 import com.github.lamba92.telegrambots.extensions.*
 import com.github.lamba92.telegrambots.extensions.TelegramMarkdownBuilder.Style.BOLD
@@ -29,7 +30,7 @@ fun Iterable<DragaliaEntity>.mapArticle() = mapArticle { entity ->
         enableMarkdown(true)
     }
     thumbUrl = entity.icon
-    id = entity.name
+    id = entity.id.toString()
     title = "${entity.name} | ${entity::class.simpleName!!.removeSuffix("Entity")}"
     description = entity.baseRarity.printStars() +
             "\n${entity.hp.toString().padStart(4)} HPs - ${entity.strength.toString().padStart(4)} STR - " +
@@ -116,8 +117,7 @@ fun TelegramMarkdownBuilder.appendEntitySpecificData(entity: DragaliaEntity) {
             entity.ability2?.let { appendAbility(it) }
             entity.ability3?.let { appendAbility(it) }
         }
-        else -> {
-        }
+        else -> {}
     }
 }
 
@@ -227,6 +227,9 @@ val Rarity.number
 
 val MessageContext.gamepediaCache
     get() = direct.instance<GamepediaDatasourceCache>()
+
+val MessageContext.dragaliaCache
+    get() = direct.instance<DragaliaLostRepositoryCache>()
 
 val InlineQueryContext.searchAllUseCase
     get() = direct.instance<SearchAllByNameUseCase>()

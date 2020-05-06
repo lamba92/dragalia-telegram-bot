@@ -1,17 +1,17 @@
 package com.github.lamba92.dragalialost.bot
 
-import com.github.aakira.napier.Antilog
 import com.github.aakira.napier.DebugAntilog
 import com.github.aakira.napier.Napier
 import com.github.lamba92.dragalialost.di.dragaliaLostModule
 import com.github.lamba92.dragalialost.di.dragaliaMongoDBCacheModule
 import com.github.lamba92.telegrambots.extensions.KApiContextInitializer
 import com.github.lamba92.telegrambots.extensions.text
-import com.github.lamba92.utils.mongodb.bootstrap.waitUntilMongoIsUp
+import kotlin.time.ExperimentalTime
+import kotlin.time.days
 
+@OptIn(ExperimentalTime::class)
 suspend fun main() {
 
-//    waitUntilMongoIsUp(DB_HOST, DB_PORT)
     Napier.base(DebugAntilog())
     KApiContextInitializer {
 
@@ -29,7 +29,9 @@ suspend fun main() {
 
                 inlineQueries {
                     if (query.text.length >= 2)
-                        respond(searchAllUseCase.buildAction(query.text).mapArticle())
+                        respond(searchAllUseCase.buildAction(query.text).mapArticle()) {
+                            cacheTime = 1.days
+                        }
                 }
 
                 messages {
@@ -38,6 +40,7 @@ suspend fun main() {
                             text = "Deleting..."
                         }
                         gamepediaCache.invalidateCache()
+                        dragaliaCache.invalidateCache()
                         respond {
                             text = "Done"
                         }

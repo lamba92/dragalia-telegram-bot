@@ -14,6 +14,8 @@ services:
       max_replicas_per_node: 1
       restart_policy:
         condition: any
+    depends_on:
+      - mongo-db
     environment:
       - BOT_TOKEN=${BOT_TOKEN}
       - DB_HOST=mongo-db
@@ -21,6 +23,9 @@ services:
 
   mongo-db:
     image: mongo
+    healthcheck:
+      test: ["mongo", "--eval", "db.stats()"]
+      start_period: 60s
     networks:
       - mongo-net
     deploy:
@@ -31,4 +36,3 @@ services:
         window: 15s
     ports:
       - 27017:27020
-

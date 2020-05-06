@@ -1,3 +1,5 @@
+@file:Suppress("SuspiciousCollectionReassignment")
+
 import com.github.lamba92.gradle.utils.TRAVIS_TAG
 import com.github.lamba92.gradle.utils.lamba
 import org.gradle.internal.os.OperatingSystem
@@ -32,7 +34,10 @@ repositories {
 }
 
 kotlin.target.compilations.all {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions {
+        jvmTarget = "1.8"
+        freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
+    }
 }
 
 dependencies {
@@ -40,7 +45,6 @@ dependencies {
     implementation("org.telegram", "telegrambots", "4.4.0.1")
     implementation(lamba("dragalia-library-kodein-di", "1.1.0"))
     implementation(lamba("telegrambots-ktx", "1.0.2"))
-    implementation(lamba("mongo-bootstrapper", "1.0.0"))
     implementation("com.vdurmont", "emoji-java", "5.1.1")
 }
 
