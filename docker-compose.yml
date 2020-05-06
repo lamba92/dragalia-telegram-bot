@@ -10,22 +10,19 @@ services:
     networks:
       - mongo-net
     deploy:
-      replicas: 3
-      max_replicas_per_node: 1
       restart_policy:
         condition: any
     depends_on:
       - mongo-db
     environment:
-      - BOT_TOKEN=${BOT_TOKEN}
+      - BOT_TOKEN=${DRAGALIA_KEY}
       - DB_HOST=mongo-db
       - DB_PORT=27017
 
   mongo-db:
     image: mongo
     healthcheck:
-      test: ["mongo", "--eval", "db.stats()"]
-      start_period: 60s
+      test: ["CMD", "mongo", "--eval", "db.stats()"]
     networks:
       - mongo-net
     deploy:
@@ -35,4 +32,7 @@ services:
         max_attempts: 3
         window: 15s
     ports:
-      - 27017:27020
+      - target: 27017
+        published: 27020
+        protocol: tcp
+        mode: ingress
