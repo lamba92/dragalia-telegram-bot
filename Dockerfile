@@ -1,4 +1,4 @@
-FROM adoptopenjdk:8
+FROM adoptopenjdk
 
 ARG APP_NAME
 ARG TAR_NAME
